@@ -1,6 +1,6 @@
 # End-to-end script running the Hugging Face Trainer 
-# for causal language modeling. Based on the Tasks documentation mased_language_modeling.py
-# originally from: https://hf.co/docs/transformers/tasks/language_modeling
+# for masked language modeling. Based on the Tasks documentation
+# originally from: https://hf.co/docs/transformers/tasks/masked_language_modeling
 import torch
 from datasets import load_dataset
 from transformers import (
