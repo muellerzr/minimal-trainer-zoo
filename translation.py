@@ -2,7 +2,6 @@
 # for translation. Based on the Tasks documentation 
 # originally from: https://hf.co/docs/transformers/tasks/translation
 import evaluate
-import torch
 import numpy as np
 from datasets import load_dataset
 from transformers import (
