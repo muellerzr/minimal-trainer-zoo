@@ -1,0 +1,12 @@
+# Requirements for running these scripts
+# In general versions in comments are the last
+# known working versions
+accelerate # 0.23.0
+datasets # 2.2.2
+evaluate # 0.1.2
+numpy # 1.17
+torch # 1.10.0
+transformers # 4.30.0
+
+# For external metrics from `evaluate`
+seqeval # 1.2.2
