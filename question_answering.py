@@ -1,6 +1,6 @@
 # End-to-end script running the Hugging Face Trainer 
-# for sequence classification. Based on the Tasks documentation 
-# originally from: https://hf.co/docs/transformers/tasks/sequence_classification
+# for question/answering. Based on the Tasks documentation 
+# originally from: https://hf.co/docs/transformers/tasks/question_answering
 import torch
 from datasets import load_dataset
 from transformers import (
