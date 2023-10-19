@@ -10,3 +10,4 @@ transformers # 4.30.0
 
 # For external metrics from `evaluate`
 seqeval # 1.2.2
+rouge_score # 0.1.2
