@@ -1,18 +1,21 @@
-# End-to-end script running the Hugging Face Trainer 
-# for translation. Based on the Tasks documentation 
+# End-to-end script running the Hugging Face Trainer
+# for translation. Based on the Tasks documentation
 # originally from: https://hf.co/docs/transformers/tasks/translation
 import evaluate
 import numpy as np
 from datasets import load_dataset
 from transformers import (
-    AutoTokenizer, AutoModelForSeq2SeqLM, DataCollatorForSeq2Seq,
-    Seq2SeqTrainingArguments, Seq2SeqTrainer
+    AutoModelForSeq2SeqLM,
+    AutoTokenizer,
+    DataCollatorForSeq2Seq,
+    Seq2SeqTrainer,
+    Seq2SeqTrainingArguments,
 )
 
 # Constants
 model_name = "t5-small"
 dataset_name = "opus_books"
-language_set = "en-fr" # English -> French
+language_set = "en-fr"  # English -> French
 source_lang = "en"
 target_lang = "fr"
 prefix = "translating English to French: "
@@ -25,11 +28,14 @@ dataset = dataset["train"].train_test_split(test_size=0.2)
 
 # Tokenize the dataset
 tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+
 def tokenize_function(examples):
     inputs = [prefix + example[source_lang] for example in examples["translation"]]
     targets = [example[target_lang] for example in examples["translation"]]
     model_inputs = tokenizer(inputs, text_target=targets, max_length=128, truncation=True)
     return model_inputs
+
 
 print(f"Tokenizing dataset for {model_name}...")
 tokenized_dataset = dataset.map(tokenize_function, batched=True)
@@ -40,6 +46,7 @@ data_collator = DataCollatorForSeq2Seq(tokenizer=tokenizer, model=model_name)
 # Handle computation of our metrics
 print(f"Loading metric ({metric})...")
 sacrebleu = evaluate.load(metric)
+
 
 def postprocess_text(preds, labels):
     preds = [pred.strip() for pred in preds]
@@ -67,27 +74,28 @@ def compute_metrics(eval_preds):
     result = {k: round(v, 4) for k, v in result.items()}
     return result
 
-print(f'Instantiating model ({model_name})...')
+
+print(f"Instantiating model ({model_name})...")
 model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
 
 # Define the hyperparameters in the TrainingArguments
-print(f'Creating training arguments (weights are stored at `results/sequence_classification`)...')
+print("Creating training arguments (weights are stored at `results/sequence_classification`)...")
 training_args = Seq2SeqTrainingArguments(
-    output_dir="results/translation", # Where weights are stored
-    learning_rate=2e-5, # The learning rate during training
-    per_device_train_batch_size=16, # Number of samples per batch during training
-    per_device_eval_batch_size=16, # Number of samples per batch during evaluation
-    num_train_epochs=2, # How many iterations through the dataloaders should be done
-    weight_decay=0.01, # Regularization penalization
-    evaluation_strategy="epoch", # How often metrics on the evaluation dataset should be computed
-    save_strategy="epoch", # When to try and save the best model (such as a step number or every iteration)
-    predict_with_generate=True, # Whether we should predict using `model.generate()`
+    output_dir="results/translation",  # Where weights are stored
+    learning_rate=2e-5,  # The learning rate during training
+    per_device_train_batch_size=16,  # Number of samples per batch during training
+    per_device_eval_batch_size=16,  # Number of samples per batch during evaluation
+    num_train_epochs=2,  # How many iterations through the dataloaders should be done
+    weight_decay=0.01,  # Regularization penalization
+    evaluation_strategy="epoch",  # How often metrics on the evaluation dataset should be computed
+    save_strategy="epoch",  # When to try and save the best model (such as a step number or every iteration)
+    predict_with_generate=True,  # Whether we should predict using `model.generate()`
 )
 
 # Create the `Seq2SeqTrainer`, passing in the model and arguments
-# the datasets to train on, how the data should be collated, 
+# the datasets to train on, how the data should be collated,
 # and the method for computing our metrics
-print(f'Creating `Trainer`...')
+print("Creating `Trainer`...")
 trainer = Seq2SeqTrainer(
     model=model,
     args=training_args,
@@ -110,6 +118,6 @@ encoded_input = tokenizer(text, return_tensors="pt").input_ids
 # Then we can perform inference using `model.generate()`:
 print("Performing inference...")
 outputs = model.generate(encoded_input, max_new_tokens=40, do_sample=True, top_k=30, top_p=0.95)
-    
+
 # Finally, decode our outputs
-print(f'Prediction: {tokenizer.decode(outputs[0], skip_special_tokens=True)}')
+print(f"Prediction: {tokenizer.decode(outputs[0], skip_special_tokens=True)}")

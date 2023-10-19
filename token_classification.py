@@ -1,13 +1,16 @@
-# End-to-end script running the Hugging Face Trainer 
-# for token classification. Based on the Tasks documentation 
+# End-to-end script running the Hugging Face Trainer
+# for token classification. Based on the Tasks documentation
 # originally from: https://hf.co/docs/transformers/tasks/token_classification
 import evaluate
-import torch
 import numpy as np
+import torch
 from datasets import load_dataset
 from transformers import (
-    AutoTokenizer, AutoModelForTokenClassification, DataCollatorForTokenClassification,
-    TrainingArguments, Trainer
+    AutoModelForTokenClassification,
+    AutoTokenizer,
+    DataCollatorForTokenClassification,
+    Trainer,
+    TrainingArguments,
 )
 
 # Constants
@@ -31,7 +34,7 @@ id2label = {
     11: "B-product",
     12: "I-product",
 }
-label2id = {v:k for k,v in id2label.items()}
+label2id = {v: k for k, v in id2label.items()}
 
 # Load dataset
 print(f"Downloading dataset ({dataset_name})")
@@ -39,12 +42,14 @@ dataset = load_dataset(dataset_name)
 
 # Tokenize the dataset
 tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+
 def tokenize_function(examples):
     "Realigns tokens and labels and limits sequence length"
     tokenized_inputs = tokenizer(examples["tokens"], truncation=True, is_split_into_words=True)
 
     labels = []
-    for i, label in enumerate(examples[f"ner_tags"]):
+    for i, label in enumerate(examples["ner_tags"]):
         word_ids = tokenized_inputs.word_ids(batch_index=i)  # Map tokens to their respective word.
         previous_word_idx = None
         label_ids = []
@@ -61,6 +66,7 @@ def tokenize_function(examples):
     tokenized_inputs["labels"] = labels
     return tokenized_inputs
 
+
 print(f"Tokenizing dataset for {model_name}...")
 tokenized_dataset = dataset.map(tokenize_function, batched=True)
 
@@ -74,6 +80,7 @@ seqeval = evaluate.load(metric)
 tags = dataset["train"][0]["ner_tags"]
 label_list = dataset["train"].features["ner_tags"].feature.names
 labels = [label_list[i] for i in tags]
+
 
 def compute_metrics(evaluation_preds):
     predictions, labels = evaluation_preds
@@ -95,30 +102,31 @@ def compute_metrics(evaluation_preds):
         "f1": results["overall_f1"],
         "accuracy": results["overall_accuracy"],
     }
-    
+
+
 # Create a model for our problem
-print(f'Instantiating model ({model_name})...')
+print(f"Instantiating model ({model_name})...")
 model = AutoModelForTokenClassification.from_pretrained(
     model_name, num_labels=13, id2label=id2label, label2id=label2id
 )
 
 # Define the hyperparameters in the TrainingArguments
-print(f'Creating training arguments (weights are stored at `results/sequence_classification`)...')
+print("Creating training arguments (weights are stored at `results/sequence_classification`)...")
 training_args = TrainingArguments(
-    output_dir="results/token_classification", # Where weights are stored
-    learning_rate=2e-5, # The learning rate during training
-    per_device_train_batch_size=16, # Number of samples per batch during training
-    per_device_eval_batch_size=16, # Number of samples per batch during evaluation
-    num_train_epochs=2, # How many iterations through the dataloaders should be done
-    weight_decay=0.01, # Regularization penalization
-    evaluation_strategy="epoch", # How often metrics on the evaluation dataset should be computed
-    save_strategy="epoch", # When to try and save the best model (such as a step number or every iteration)
+    output_dir="results/token_classification",  # Where weights are stored
+    learning_rate=2e-5,  # The learning rate during training
+    per_device_train_batch_size=16,  # Number of samples per batch during training
+    per_device_eval_batch_size=16,  # Number of samples per batch during evaluation
+    num_train_epochs=2,  # How many iterations through the dataloaders should be done
+    weight_decay=0.01,  # Regularization penalization
+    evaluation_strategy="epoch",  # How often metrics on the evaluation dataset should be computed
+    save_strategy="epoch",  # When to try and save the best model (such as a step number or every iteration)
 )
 
 # Create the `Trainer`, passing in the model and arguments
-# the datasets to train on, how the data should be collated, 
+# the datasets to train on, how the data should be collated,
 # and the method for computing our metrics
-print(f'Creating `Trainer`...')
+print("Creating `Trainer`...")
 trainer = Trainer(
     model=model,
     args=training_args,
@@ -142,8 +150,8 @@ print("Performing inference...")
 model.eval()
 with torch.inference_mode():
     logits = model(**encoded_input).logits
-    
+
 # Finally, decode our outputs
 predictions = logits.argmax(dim=2)
-print(f'Prediction: {[id2label[pred] for pred in predictions[0]]}')
+print(f"Prediction: {[id2label[pred] for pred in predictions[0]]}")
 # Can also use `model.config.id2label` instead

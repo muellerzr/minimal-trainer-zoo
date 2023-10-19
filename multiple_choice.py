@@ -1,17 +1,15 @@
-# End-to-end script running the Hugging Face Trainer 
-# for multiple choice. Based on the Tasks documentation 
+# End-to-end script running the Hugging Face Trainer
+# for multiple choice. Based on the Tasks documentation
 # originally from: https://hf.co/docs/transformers/tasks/multiple_choice
-import evaluate
-import torch
-import numpy as np
 from dataclasses import dataclass
-from transformers.tokenization_utils_base import PreTrainedTokenizerBase, PaddingStrategy
 from typing import Optional, Union
+
+import evaluate
+import numpy as np
+import torch
 from datasets import load_dataset
-from transformers import (
-    AutoTokenizer, AutoModelForMultipleChoice,
-    TrainingArguments, Trainer
-)
+from transformers import AutoModelForMultipleChoice, AutoTokenizer, Trainer, TrainingArguments
+from transformers.tokenization_utils_base import PaddingStrategy, PreTrainedTokenizerBase
 
 # Constants
 model_name = "bert-base-uncased"
@@ -26,6 +24,7 @@ dataset = load_dataset(dataset_name, "regular")
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 ending_names = ["ending0", "ending1", "ending2", "ending3"]
 
+
 def tokenize_function(examples):
     first_sentences = [[context] * 4 for context in examples["sent1"]]
     question_headers = examples["sent2"]
@@ -39,8 +38,10 @@ def tokenize_function(examples):
     tokenized_examples = tokenizer(first_sentences, second_sentences, truncation=True)
     return {k: [v[i : i + 4] for i in range(0, len(v), 4)] for k, v in tokenized_examples.items()}
 
+
 print(f"Tokenizing dataset for {model_name}...")
 tokenized_dataset = dataset.map(tokenize_function, batched=True)
+
 
 # Create our own data collator class and use it
 @dataclass
@@ -75,40 +76,41 @@ class DataCollatorForMultipleChoice:
         batch = {k: v.view(batch_size, num_choices, -1) for k, v in batch.items()}
         batch["labels"] = torch.tensor(labels, dtype=torch.int64)
         return batch
-    
+
+
 data_collator = DataCollatorForMultipleChoice(tokenizer=tokenizer)
-    
+
 # Handle computation of our metrics
 print(f"Loading metric ({metric})...")
 accuracy = evaluate.load(metric)
 
+
 def compute_metrics(evaluation_preds):
     predictions, labels = evaluation_preds
     predictions = np.argmax(predictions, axis=1)
-    return accuracy.compute(
-        predictions=predictions, references=labels
-    )
+    return accuracy.compute(predictions=predictions, references=labels)
 
-print(f'Instantiating model ({model_name})...')
+
+print(f"Instantiating model ({model_name})...")
 model = AutoModelForMultipleChoice.from_pretrained(model_name)
 
 # Define the hyperparameters in the TrainingArguments
-print(f'Creating training arguments (weights are stored at `results/sequence_classification`)...')
+print("Creating training arguments (weights are stored at `results/sequence_classification`)...")
 training_args = TrainingArguments(
-    output_dir="results/multiple_choice", # Where weights are stored
-    learning_rate=5e-5, # The learning rate during training
-    per_device_train_batch_size=16, # Number of samples per batch during training
-    per_device_eval_batch_size=16, # Number of samples per batch during evaluation
-    num_train_epochs=2, # How many iterations through the dataloaders should be done
-    weight_decay=0.01, # Regularization penalization
-    evaluation_strategy="epoch", # How often metrics on the evaluation dataset should be computed
-    save_strategy="epoch", # When to try and save the best model (such as a step number or every iteration)
+    output_dir="results/multiple_choice",  # Where weights are stored
+    learning_rate=5e-5,  # The learning rate during training
+    per_device_train_batch_size=16,  # Number of samples per batch during training
+    per_device_eval_batch_size=16,  # Number of samples per batch during evaluation
+    num_train_epochs=2,  # How many iterations through the dataloaders should be done
+    weight_decay=0.01,  # Regularization penalization
+    evaluation_strategy="epoch",  # How often metrics on the evaluation dataset should be computed
+    save_strategy="epoch",  # When to try and save the best model (such as a step number or every iteration)
 )
 
 # Create the `Trainer`, passing in the model and arguments
-# the datasets to train on, how the data should be collated, 
+# the datasets to train on, how the data should be collated,
 # and the method for computing our metrics
-print(f'Creating `Trainer`...')
+print("Creating `Trainer`...")
 trainer = Trainer(
     model=model,
     args=training_args,
@@ -129,7 +131,7 @@ candidate1 = "The law does not apply to croissants and brioche."
 candidate2 = "The law applies to baguettes."
 # We need to tokenize the inputs and turn them to PyTorch tensors
 encoded_input = tokenizer([[prompt, candidate1], [prompt, candidate2]], return_tensors="pt", padding=True)
-encoded_input = {k: v.unsqueeze(0) for k,v in encoded_input.items()}
+encoded_input = {k: v.unsqueeze(0) for k, v in encoded_input.items()}
 labels = torch.tensor(0).unsqueeze(0)
 
 # Then we can perform raw torch inference:
@@ -137,7 +139,7 @@ print("Performing inference...")
 model.eval()
 with torch.inference_mode():
     logits = model(**encoded_input, labels=labels).logits
-    
+
 # Finally, decode our outputs
 predicted_class = logits.argmax().item()
-print(f'Predicted answer number: {predicted_class}')
+print(f"Predicted answer number: {predicted_class}")

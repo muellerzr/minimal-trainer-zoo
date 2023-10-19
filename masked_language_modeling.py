@@ -1,11 +1,14 @@
-# End-to-end script running the Hugging Face Trainer 
+# End-to-end script running the Hugging Face Trainer
 # for masked language modeling. Based on the Tasks documentation
 # originally from: https://hf.co/docs/transformers/tasks/masked_language_modeling
 import torch
 from datasets import load_dataset
 from transformers import (
-    AutoTokenizer, AutoModelForMaskedLM, DataCollatorForLanguageModeling,
-    TrainingArguments, Trainer
+    AutoModelForMaskedLM,
+    AutoTokenizer,
+    DataCollatorForLanguageModeling,
+    Trainer,
+    TrainingArguments,
 )
 
 # Constants
@@ -19,20 +22,20 @@ dataset = dataset.train_test_split(test_size=0.2)
 
 # Tokenize the dataset
 tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+
 def tokenize_function(examples):
     return tokenizer([" ".join(x) for x in examples["answers.text"]])
 
+
 print(f"Tokenizing dataset for {model_name}...")
-tokenized_dataset = dataset.map(
-    tokenize_function, 
-    batched=True,
-    remove_columns=dataset["train"].column_names
-)
+tokenized_dataset = dataset.map(tokenize_function, batched=True, remove_columns=dataset["train"].column_names)
 
 # We still need to concatenate our sequences
 # and split them into shorter chunks to ease
 # minimal RAM usage
 block_size = 128
+
 
 def group_texts(examples):
     # Concatenate all texts.
@@ -50,35 +53,36 @@ def group_texts(examples):
     result["labels"] = result["input_ids"].copy()
     return result
 
+
 # And apply
 tokenized_dataset = tokenized_dataset.map(group_texts, batched=True)
 
 # Create an efficient collator which dynamically pads
-# End-of-sequence as the padding token and mlm=False will 
+# End-of-sequence as the padding token and mlm=False will
 # use the inputs as labels, shifted to the right by one element
 tokenizer.pad_token = tokenizer.eos_token
 data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer)
 
-print(f'Instantiating model ({model_name})...')
+print(f"Instantiating model ({model_name})...")
 model = AutoModelForMaskedLM.from_pretrained(model_name)
 
 # Define the hyperparameters in the TrainingArguments
-print(f'Creating training arguments (weights are stored at `results/causal_language_modeling`)...')
+print("Creating training arguments (weights are stored at `results/causal_language_modeling`)...")
 training_args = TrainingArguments(
-    output_dir="results/masked_language_modeling", # Where weights are stored
-    learning_rate=2e-5, # The learning rate during training
-    per_device_train_batch_size=8, # Number of samples per batch during training
-    per_device_eval_batch_size=8, # Number of samples per batch during evaluation
-    num_train_epochs=2, # How many iterations through the dataloaders should be done
-    weight_decay=0.01, # Regularization penalization
-    evaluation_strategy="epoch", # How often metrics on the evaluation dataset should be computed
-    save_strategy="epoch", # When to try and save the best model (such as a step number or every iteration)
+    output_dir="results/masked_language_modeling",  # Where weights are stored
+    learning_rate=2e-5,  # The learning rate during training
+    per_device_train_batch_size=8,  # Number of samples per batch during training
+    per_device_eval_batch_size=8,  # Number of samples per batch during evaluation
+    num_train_epochs=2,  # How many iterations through the dataloaders should be done
+    weight_decay=0.01,  # Regularization penalization
+    evaluation_strategy="epoch",  # How often metrics on the evaluation dataset should be computed
+    save_strategy="epoch",  # When to try and save the best model (such as a step number or every iteration)
 )
 
 # Create the `Trainer`, passing in the model and arguments
-# the datasets to train on, how the data should be collated, 
+# the datasets to train on, how the data should be collated,
 # and the method for computing our metrics
-print(f'Creating `Trainer`...')
+print("Creating `Trainer`...")
 trainer = Trainer(
     model=model,
     args=training_args,
@@ -102,7 +106,7 @@ print("Performing inference...")
 with torch.inference_mode():
     logits = model(**encoded_input).logits
 mask_token_logits = logits[0, mask_token_index, :]
-    
+
 # Finally, decode our outputs
 top_3_tokens = torch.topk(mask_token_logits, 3, dim=1).indices[0].tolist()
 print("Predictions:")

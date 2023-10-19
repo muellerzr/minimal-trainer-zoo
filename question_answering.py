@@ -1,12 +1,9 @@
-# End-to-end script running the Hugging Face Trainer 
-# for question/answering. Based on the Tasks documentation 
+# End-to-end script running the Hugging Face Trainer
+# for question/answering. Based on the Tasks documentation
 # originally from: https://hf.co/docs/transformers/tasks/question_answering
 import torch
 from datasets import load_dataset
-from transformers import (
-    AutoTokenizer, AutoModelForQuestionAnswering, DefaultDataCollator,
-    TrainingArguments, Trainer
-)
+from transformers import AutoModelForQuestionAnswering, AutoTokenizer, DefaultDataCollator, Trainer, TrainingArguments
 
 # Constants
 model_name = "distilbert-base-uncased"
@@ -19,6 +16,8 @@ dataset = dataset.train_test_split(test_size=0.2)
 
 # Tokenize the dataset
 tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+
 def tokenize_function(examples):
     questions = [q.strip() for q in examples["question"]]
     inputs = tokenizer(
@@ -70,32 +69,33 @@ def tokenize_function(examples):
     inputs["end_positions"] = end_positions
     return inputs
 
+
 print(f"Tokenizing dataset for {model_name}...")
 tokenized_dataset = dataset.map(tokenize_function, batched=True)
 
 # Use a basic collator with no preprocessing (like padding)
 data_collator = DefaultDataCollator()
 
-print(f'Instantiating model ({model_name})...')
+print(f"Instantiating model ({model_name})...")
 model = AutoModelForQuestionAnswering.from_pretrained(model_name)
 
 # Define the hyperparameters in the TrainingArguments
-print(f'Creating training arguments (weights are stored at `results/sequence_classification`)...')
+print("Creating training arguments (weights are stored at `results/sequence_classification`)...")
 training_args = TrainingArguments(
-    output_dir="results/question_answering", # Where weights are stored
-    learning_rate=2e-5, # The learning rate during training
-    per_device_train_batch_size=16, # Number of samples per batch during training
-    per_device_eval_batch_size=16, # Number of samples per batch during evaluation
-    num_train_epochs=3, # How many iterations through the dataloaders should be done
-    weight_decay=0.01, # Regularization penalization
-    evaluation_strategy="epoch", # How often metrics on the evaluation dataset should be computed
-    save_strategy="epoch", # When to try and save the best model (such as a step number or every iteration)
+    output_dir="results/question_answering",  # Where weights are stored
+    learning_rate=2e-5,  # The learning rate during training
+    per_device_train_batch_size=16,  # Number of samples per batch during training
+    per_device_eval_batch_size=16,  # Number of samples per batch during evaluation
+    num_train_epochs=3,  # How many iterations through the dataloaders should be done
+    weight_decay=0.01,  # Regularization penalization
+    evaluation_strategy="epoch",  # How often metrics on the evaluation dataset should be computed
+    save_strategy="epoch",  # When to try and save the best model (such as a step number or every iteration)
 )
 
 # Create the `Trainer`, passing in the model and arguments
-# the datasets to train on, how the data should be collated, 
+# the datasets to train on, how the data should be collated,
 # and the method for computing our metrics
-print(f'Creating `Trainer`...')
+print("Creating `Trainer`...")
 trainer = Trainer(
     model=model,
     args=training_args,
@@ -120,9 +120,9 @@ print("Performing inference...")
 model.eval()
 with torch.inference_mode():
     outputs = model(**encoded_input)
-    
+
 # Finally, decode our outputs
 answer_start_index = outputs.start_logits.argmax()
 answer_end_index = outputs.end_logits.argmax()
 predicted_answer_tokens = encoded_input.input_ids[0, answer_start_index : answer_end_index + 1]
-print(f'Prediction: {tokenizer.decode(predicted_answer_tokens)}')
+print(f"Prediction: {tokenizer.decode(predicted_answer_tokens)}")
