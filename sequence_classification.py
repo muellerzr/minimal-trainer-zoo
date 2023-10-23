@@ -92,7 +92,7 @@ trainer.train()
 print("Pushing to hub...")
 kwargs = {"finetuned_from": model_name, "tasks": "text-classification"}
 trainer.push_to_hub(**kwargs)
-        
+
 # Performing inference
 text = "This was a masterpiece. Not completely faithful to the books, but enthralling from beginning to end. Might be my favorite of the three."
 # We need to tokenize the inputs and turn them to PyTorch tensors

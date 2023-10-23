@@ -2,6 +2,7 @@
 # for masked language modeling. Based on the Tasks documentation
 # originally from: https://hf.co/docs/transformers/tasks/masked_language_modeling
 import torch
+from accelerate import PartialState
 from datasets import load_dataset
 from transformers import (
     AutoModelForMaskedLM,
@@ -13,11 +14,12 @@ from transformers import (
 
 # Constants
 model_name = "distilroberta-base"
-dataset_name = "eli5"
+dataset_name = "wikitext"
+dataset_config = "wikitext-2-raw-v1"
 
 # Load dataset
 print(f"Downloading dataset ({dataset_name})")
-dataset = load_dataset(dataset_name, split="train_asks[:5000]")
+dataset = load_dataset(dataset_name, dataset_config, split="train[:500]")
 dataset = dataset.train_test_split(test_size=0.2)
 
 # Tokenize the dataset
@@ -25,7 +27,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 
 def tokenize_function(examples):
-    return tokenizer([" ".join(x) for x in examples["answers.text"]])
+    return tokenizer(examples["text"])
 
 
 print(f"Tokenizing dataset for {model_name}...")
@@ -99,6 +101,12 @@ trainer.train()
 text = "The Milky Way is a <mask> galaxy."
 # We need to tokenize the inputs and turn them to PyTorch tensors
 encoded_input = tokenizer(text, return_tensors="pt").input_ids
+
+# To move the batch to the right device automatically, use `PartialState().device`
+# which will always work no matter the environment
+encoded_input = encoded_input.to(PartialState().device)
+# Can also be `encoded_input.to("cuda")`
+
 mask_token_index = torch.where(encoded_input["input_ids"] == tokenizer.mask_token_id)[1]
 
 # Then we can perform inference via `model.generate`:

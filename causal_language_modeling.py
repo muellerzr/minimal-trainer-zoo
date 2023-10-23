@@ -1,6 +1,7 @@
 # End-to-end script running the Hugging Face Trainer
 # for causal language modeling. Based on the Tasks documentation
 # originally from: https://hf.co/docs/transformers/tasks/language_modeling
+from accelerate import PartialState
 from datasets import load_dataset
 from transformers import (
     AutoModelForCausalLM,
@@ -12,11 +13,12 @@ from transformers import (
 
 # Constants
 model_name = "distilgpt2"
-dataset_name = "eli5"
+dataset_name = "wikitext"
+dataset_config = "wikitext-2-raw-v1"
 
 # Load dataset
 print(f"Downloading dataset ({dataset_name})")
-dataset = load_dataset(dataset_name, split="train_asks[:5000]")
+dataset = load_dataset(dataset_name, dataset_config, split="train[:500]")
 dataset = dataset.train_test_split(test_size=0.2)
 
 # Tokenize the dataset
@@ -24,7 +26,7 @@ tokenizer = AutoTokenizer.from_pretrained(model_name)
 
 
 def tokenize_function(examples):
-    return tokenizer([" ".join(x) for x in examples["answers.text"]])
+    return tokenizer(examples["text"])
 
 
 print(f"Tokenizing dataset for {model_name}...")
@@ -60,7 +62,7 @@ tokenized_dataset = tokenized_dataset.map(group_texts, batched=True)
 # End-of-sequence as the padding token and mlm=False will
 # use the inputs as labels, shifted to the right by one element
 tokenizer.pad_token = tokenizer.eos_token
-data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer)
+data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
 
 print(f"Instantiating model ({model_name})...")
 model = AutoModelForCausalLM.from_pretrained(model_name)
@@ -98,6 +100,11 @@ trainer.train()
 text = "Somatic hypermutation allows the immune system to"
 # We need to tokenize the inputs and turn them to PyTorch tensors
 encoded_input = tokenizer(text, return_tensors="pt").input_ids
+
+# To move the batch to the right device automatically, use `PartialState().device`
+# which will always work no matter the environment
+encoded_input = encoded_input.to(PartialState().device)
+# Can also be `encoded_input.to("cuda")`
 
 # Then we can perform inference via `model.generate`:
 print("Performing inference...")

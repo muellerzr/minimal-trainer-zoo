@@ -6,7 +6,7 @@
 
 for file in *.py; do
     echo $file >> times.txt
-    (time python $file) 2>&1 | grep "real" >> times.txt
+    (time CUDA_VISIBLE_DEVICES="0" python $file) 2>&1 | grep "real" >> times.txt
 done
 
 
