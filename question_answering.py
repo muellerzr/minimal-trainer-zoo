@@ -2,6 +2,7 @@
 # for question/answering. Based on the Tasks documentation
 # originally from: https://hf.co/docs/transformers/tasks/question_answering
 import torch
+from accelerate import PartialState
 from datasets import load_dataset
 from transformers import AutoModelForQuestionAnswering, AutoTokenizer, DefaultDataCollator, Trainer, TrainingArguments
 
@@ -80,16 +81,17 @@ print(f"Instantiating model ({model_name})...")
 model = AutoModelForQuestionAnswering.from_pretrained(model_name)
 
 # Define the hyperparameters in the TrainingArguments
-print("Creating training arguments (weights are stored at `results/sequence_classification`)...")
+print("Creating training arguments (weights are stored at `results/question_answering`)...")
 training_args = TrainingArguments(
     output_dir="results/question_answering",  # Where weights are stored
     learning_rate=2e-5,  # The learning rate during training
-    per_device_train_batch_size=16,  # Number of samples per batch during training
-    per_device_eval_batch_size=16,  # Number of samples per batch during evaluation
+    per_device_train_batch_size=64,  # Number of samples per batch during training
+    per_device_eval_batch_size=64,  # Number of samples per batch during evaluation
     num_train_epochs=3,  # How many iterations through the dataloaders should be done
     weight_decay=0.01,  # Regularization penalization
     evaluation_strategy="epoch",  # How often metrics on the evaluation dataset should be computed
     save_strategy="epoch",  # When to try and save the best model (such as a step number or every iteration)
+    fp16=True,  # Whether to use 16-bit precision (mixed precision) instead of 32-bit. Generally faster on T4's
 )
 
 # Create the `Trainer`, passing in the model and arguments
@@ -114,6 +116,11 @@ question = "How many programming languages does BLOOM support?"
 context = "BLOOM has 176 billion parameters and can generate text in 46 languages natural languages and 13 programming languages."
 # We need to tokenize the inputs and turn them to PyTorch tensors
 encoded_input = tokenizer(question, context, return_tensors="pt")
+
+# To move the batch to the right device automatically, use `PartialState().device`
+# which will always work no matter the environment
+encoded_input = encoded_input.to(PartialState().device)
+# Can also be `encoded_input.to("cuda")`
 
 # Then we can perform raw torch inference:
 print("Performing inference...")
