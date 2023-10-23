@@ -19,11 +19,11 @@ language_set = "en-fr"  # English -> French
 source_lang = "en"
 target_lang = "fr"
 prefix = "translating English to French: "
-metric = "sacreblue"
+metric = "sacrebleu"
 
 # Load dataset
 print(f"Downloading dataset ({dataset_name})")
-dataset = load_dataset(dataset_name)
+dataset = load_dataset(dataset_name, language_set)
 dataset = dataset["train"].train_test_split(test_size=0.2)
 
 # Tokenize the dataset
@@ -66,7 +66,7 @@ def compute_metrics(eval_preds):
 
     decoded_preds, decoded_labels = postprocess_text(decoded_preds, decoded_labels)
 
-    result = metric.compute(predictions=decoded_preds, references=decoded_labels)
+    result = sacrebleu.compute(predictions=decoded_preds, references=decoded_labels)
     result = {"bleu": result["score"]}
 
     prediction_lens = [np.count_nonzero(pred != tokenizer.pad_token_id) for pred in preds]
