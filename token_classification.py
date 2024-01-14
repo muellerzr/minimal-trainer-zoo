@@ -143,7 +143,7 @@ trainer.train()
 # Performing inference
 text = "The Golden State Warriors are an American professional basketball team based in San Francisco."
 # We need to tokenize the inputs and turn them to PyTorch tensors
-encoded_input = tokenizer(text, return_tensors="pt")
+encoded_input = tokenizer(text, return_tensors="pt").to("cuda")
 
 # Then we can perform raw torch inference:
 print("Performing inference...")
@@ -153,5 +153,5 @@ with torch.inference_mode():
 
 # Finally, decode our outputs
 predictions = logits.argmax(dim=2)
-print(f"Prediction: {[id2label[pred] for pred in predictions[0]]}")
+print(f"Prediction: {[id2label[pred.item()] for pred in predictions[0]]}")
 # Can also use `model.config.id2label` instead
