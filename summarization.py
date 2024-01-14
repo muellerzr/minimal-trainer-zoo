@@ -68,8 +68,8 @@ print("Creating training arguments (weights are stored at `results/sequence_clas
 training_args = Seq2SeqTrainingArguments(
     output_dir="results/summarization",  # Where weights are stored
     learning_rate=2e-5,  # The learning rate during training
-    per_device_train_batch_size=16,  # Number of samples per batch during training
-    per_device_eval_batch_size=16,  # Number of samples per batch during evaluation
+    per_device_train_batch_size=8,  # Number of samples per batch during training
+    per_device_eval_batch_size=8,  # Number of samples per batch during evaluation
     num_train_epochs=4,  # How many iterations through the dataloaders should be done
     weight_decay=0.01,  # Regularization penalization
     evaluation_strategy="epoch",  # How often metrics on the evaluation dataset should be computed
