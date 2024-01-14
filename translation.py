@@ -113,7 +113,7 @@ trainer.train()
 # Performing inference
 text = "translate English to French: Legumes share resources with nitrogen-fixing bacteria."
 # We need to tokenize the inputs and turn them to PyTorch tensors
-encoded_input = tokenizer(text, return_tensors="pt").input_ids
+encoded_input = tokenizer(text, return_tensors="pt").input_ids.to("cuda")
 
 # Then we can perform inference using `model.generate()`:
 print("Performing inference...")
