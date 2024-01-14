@@ -2,6 +2,7 @@
 # for sequence classification. Based on the Tasks documentation
 # originally from: https://hf.co/docs/transformers/tasks/sequence_classification
 import evaluate
+import accelerate
 import numpy as np
 import torch
 from datasets import load_dataset
