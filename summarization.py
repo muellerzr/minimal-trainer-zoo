@@ -2,6 +2,7 @@
 # for sequence classification. Based on the Tasks documentation
 # originally from: https://hf.co/docs/transformers/tasks/sequence_classification
 import evaluate
+from accelerate import PartialState
 import numpy as np
 from datasets import load_dataset
 from transformers import (
@@ -97,7 +98,7 @@ trainer.train()
 
 # Performing inference
 text = "summarize: The Inflation Reduction Act lowers prescription drug costs, health care costs, and energy costs. It's the most aggressive action on tackling the climate crisis in American history, which will lift up American workers and create good-paying, union jobs across the country. It'll lower the deficit and ask the ultra-wealthy and corporations to pay their fair share. And no one making under $400,000 per year will pay a penny more in taxes."  # We need to tokenize the inputs and turn them to PyTorch tensors
-encoded_input = tokenizer(text, return_tensors="pt").input_ids
+encoded_input = tokenizer(text, return_tensors="pt").input_ids.to(PartialState().device)
 
 # Then we can perform inference using `model.generate`:
 print("Performing inference...")
