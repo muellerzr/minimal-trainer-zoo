@@ -5,5 +5,5 @@ numpy==1.23.5
 rouge-score==0.1.2
 sacrebleu==2.4.0
 seqeval==1.2.2
-torch==2.1.0+cu121
+torch==2.1.0
 transformers==4.35.2
