@@ -19,7 +19,7 @@ metric = "accuracy"
 
 # Load dataset
 print(f"Downloading dataset ({dataset_name})")
-dataset = load_dataset(dataset_name, "regular", split="train[:8%]")
+dataset = load_dataset(dataset_name, "regular", split="train[:8%]", trust_remote_code=True)
 dataset = dataset.train_test_split(test_size=0.2)
 
 # Tokenize the dataset

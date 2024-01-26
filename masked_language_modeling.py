@@ -97,10 +97,14 @@ trainer = Trainer(
 print("Training...")
 trainer.train()
 
+# Use the evaluate() method to evaluate the model and get its perplexity:
+eval_results = trainer.evaluate()
+print(f"Perplexity: {math.exp(eval_results['eval_loss']):.2f}")
+
 # Performing inference
 text = "The Milky Way is a <mask> galaxy."
 # We need to tokenize the inputs and turn them to PyTorch tensors
-encoded_input = tokenizer(text, return_tensors="pt").input_ids
+encoded_input = tokenizer(text, return_tensors="pt")
 
 # To move the batch to the right device automatically, use `PartialState().device`
 # which will always work no matter the environment

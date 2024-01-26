@@ -2,6 +2,7 @@
 # for sequence classification. Based on the Tasks documentation
 # originally from: https://hf.co/docs/transformers/tasks/sequence_classification
 import evaluate
+from accelerate import PartialState
 import numpy as np
 import torch
 from datasets import load_dataset
@@ -96,7 +97,7 @@ trainer.push_to_hub(**kwargs)
 # Performing inference
 text = "This was a masterpiece. Not completely faithful to the books, but enthralling from beginning to end. Might be my favorite of the three."
 # We need to tokenize the inputs and turn them to PyTorch tensors
-encoded_input = tokenizer(text, return_tensors="pt").to("cuda")
+encoded_input = tokenizer(text, return_tensors="pt").to(PartialState().device)
 
 # Then we can perform raw torch inference:
 print("Performing inference...")
