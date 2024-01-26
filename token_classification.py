@@ -2,6 +2,7 @@
 # for token classification. Based on the Tasks documentation
 # originally from: https://hf.co/docs/transformers/tasks/token_classification
 import evaluate
+from accelerate import PartialState
 import numpy as np
 import torch
 from datasets import load_dataset
@@ -143,7 +144,7 @@ trainer.train()
 # Performing inference
 text = "The Golden State Warriors are an American professional basketball team based in San Francisco."
 # We need to tokenize the inputs and turn them to PyTorch tensors
-encoded_input = tokenizer(text, return_tensors="pt").to("cuda")
+encoded_input = tokenizer(text, return_tensors="pt").to(PartialState().device)
 
 # Then we can perform raw torch inference:
 print("Performing inference...")
