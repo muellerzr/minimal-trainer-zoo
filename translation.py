@@ -3,6 +3,7 @@
 # originally from: https://hf.co/docs/transformers/tasks/translation
 import evaluate
 import numpy as np
+from accelerate import PartialState
 from datasets import load_dataset
 from transformers import (
     AutoModelForSeq2SeqLM,
@@ -113,7 +114,7 @@ trainer.train()
 # Performing inference
 text = "translate English to French: Legumes share resources with nitrogen-fixing bacteria."
 # We need to tokenize the inputs and turn them to PyTorch tensors
-encoded_input = tokenizer(text, return_tensors="pt").input_ids.to("cuda")
+encoded_input = tokenizer(text, return_tensors="pt").input_ids.to(PartialState().device)
 
 # Then we can perform inference using `model.generate()`:
 print("Performing inference...")
